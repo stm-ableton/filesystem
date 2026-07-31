@@ -206,7 +206,7 @@ public:
     file_status status() const
     {
         if (!filesystem::status_known(m_status))
-            refresh_impl();
+            refresh_impl(refresh_mode::follow);
         return m_status;
     }
 
@@ -215,14 +215,14 @@ public:
         ec.clear();
 
         if (!filesystem::status_known(m_status))
-            refresh_impl(&ec);
+            refresh_impl(&ec, refresh_mode::follow);
         return m_status;
     }
 
     file_status symlink_status() const
     {
         if (!filesystem::status_known(m_symlink_status))
-            refresh_impl();
+            refresh_impl(refresh_mode::no_follow);
         return m_symlink_status;
     }
 
@@ -231,14 +231,14 @@ public:
         ec.clear();
 
         if (!filesystem::status_known(m_symlink_status))
-            refresh_impl(&ec);
+            refresh_impl(&ec, refresh_mode::no_follow);
         return m_symlink_status;
     }
 
     filesystem::file_type file_type() const
     {
         if (!filesystem::type_present(m_status))
-            refresh_impl();
+            refresh_impl(refresh_mode::follow);
         return m_status.type();
     }
 
@@ -247,14 +247,14 @@ public:
         ec.clear();
 
         if (!filesystem::type_present(m_status))
-            refresh_impl(&ec);
+            refresh_impl(&ec, refresh_mode::follow);
         return m_status.type();
     }
 
     filesystem::file_type symlink_file_type() const
     {
         if (!filesystem::type_present(m_symlink_status))
-            refresh_impl();
+            refresh_impl(refresh_mode::no_follow);
         return m_symlink_status.type();
     }
 
@@ -263,7 +263,7 @@ public:
         ec.clear();
 
         if (!filesystem::type_present(m_symlink_status))
-            refresh_impl(&ec);
+            refresh_impl(&ec, refresh_mode::no_follow);
         return m_symlink_status.type();
     }
 
@@ -381,7 +381,17 @@ public:
     bool operator>=(directory_entry const& rhs) const { return m_path >= rhs.m_path; }
 
 private:
-    BOOST_FILESYSTEM_DECL void refresh_impl(system::error_code* ec = nullptr) const;
+    enum class refresh_mode
+    {
+        no_follow,
+        follow,
+        follow_lenient
+    };
+
+    BOOST_FILESYSTEM_DECL void refresh_impl(
+        system::error_code* ec = nullptr,
+        refresh_mode which = refresh_mode::follow_lenient) const;
+    void refresh_impl(refresh_mode which) const { refresh_impl(nullptr, which); }
 
     void assign_with_status(boost::filesystem::path&& p, file_status st, file_status symlink_st)
     {

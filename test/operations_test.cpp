@@ -2403,6 +2403,214 @@ void symlink_is_empty_tests()
     BOOST_TEST_EQ(empty, true);
 }
 
+//  directory_entry_tests  ----------------------------------------------------//
+
+void directory_entry_tests()
+{
+    cout << "directory_entry_tests..." << endl;
+
+    fs::path reg_file(dir / "reg-file");
+    fs::remove(reg_file);
+    create_file(reg_file);
+    error_code ec;
+
+    // status
+    {
+        fs::directory_entry reg_entry(reg_file);
+
+        ec = error_code();
+        BOOST_TEST_EQ(reg_entry.status(ec).type(), fs::regular_file);
+        BOOST_TEST(!ec);
+    }
+
+    // symlink_status
+    {
+        fs::directory_entry reg_entry(reg_file);
+
+        ec = error_code();
+        BOOST_TEST_EQ(reg_entry.symlink_status(ec).type(), fs::regular_file);
+        BOOST_TEST(!ec);
+    }
+
+    // file_type
+    {
+        fs::directory_entry reg_entry(reg_file);
+
+        ec = error_code();
+        BOOST_TEST_EQ(reg_entry.file_type(ec), fs::regular_file);
+        BOOST_TEST(!ec);
+    }
+
+    // symlink_file_type
+    {
+        fs::directory_entry reg_entry(reg_file);
+
+        ec = error_code();
+        BOOST_TEST_EQ(reg_entry.symlink_file_type(ec), fs::regular_file);
+        BOOST_TEST(!ec);
+    }
+
+    // refresh
+    {
+        fs::directory_entry reg_entry(reg_file);
+
+        ec = error_code();
+        reg_entry.refresh(ec);
+        BOOST_TEST(!ec);
+
+        // Make sure status() and symlink_status() hold the expected types
+        // after a call to refresh, too
+        BOOST_TEST_EQ(reg_entry.symlink_status().type(), fs::regular_file);
+        BOOST_TEST_EQ(reg_entry.status().type(), fs::regular_file);
+    }
+
+#if BOOST_FILESYSTEM_VERSION >= 4
+    // ctor overload with error_code
+    {
+        ec = error_code();
+        fs::directory_entry reg_entry(reg_file, ec);
+        BOOST_TEST(!ec);
+        BOOST_TEST(reg_entry.path() == reg_file);
+    }
+
+    // assign overload with error_code
+    {
+        fs::directory_entry reg_entry;
+
+        ec = error_code();
+        reg_entry.assign(reg_file, ec);
+        BOOST_TEST(!ec);
+        BOOST_TEST(reg_entry.path() == reg_file);
+    }
+#endif
+
+    fs::remove(reg_file);
+}
+
+//  directory_entry_symlink_tests  --------------------------------------------//
+
+void directory_entry_symlink_tests()
+{
+    cout << "directory_entry_symlink_tests..." << endl;
+
+    fs::path reg_file(dir / "reg-file");
+    fs::path valid_sym(dir / "valid-sym");
+    fs::path dangling_sym(dir / "dangling-sym");
+    fs::remove(reg_file);
+    fs::remove(valid_sym);
+    fs::remove(dangling_sym);
+    create_file(reg_file);
+    fs::create_symlink(reg_file, valid_sym);
+    fs::create_symlink("does not exist", dangling_sym);
+    error_code ec;
+
+    // status
+    {
+        fs::directory_entry sym_entry(valid_sym);
+        fs::directory_entry dsym_entry(dangling_sym);
+
+        ec = error_code();
+        BOOST_TEST_EQ(sym_entry.status(ec).type(), fs::regular_file);
+        BOOST_TEST(!ec);
+        BOOST_TEST_EQ(dsym_entry.status(ec).type(), fs::file_not_found);
+#if BOOST_FILESYSTEM_VERSION < 4
+        BOOST_TEST(ec);
+#endif
+    }
+
+    // symlink_status
+    {
+        fs::directory_entry sym_entry(valid_sym);
+        fs::directory_entry dsym_entry(dangling_sym);
+
+        ec = error_code();
+        BOOST_TEST_EQ(sym_entry.symlink_status(ec).type(), fs::symlink_file);
+        BOOST_TEST(!ec);
+        BOOST_TEST_EQ(dsym_entry.symlink_status(ec).type(), fs::symlink_file);
+        BOOST_TEST(!ec);
+    }
+
+    // file_type
+    {
+        fs::directory_entry sym_entry(valid_sym);
+        fs::directory_entry dsym_entry(dangling_sym);
+
+        ec = error_code();
+        BOOST_TEST_EQ(sym_entry.file_type(ec), fs::regular_file);
+        BOOST_TEST(!ec);
+        BOOST_TEST_EQ(dsym_entry.file_type(ec), fs::file_not_found);
+#if BOOST_FILESYSTEM_VERSION < 4
+        BOOST_TEST(ec);
+#endif
+    }
+
+    // symlink_file_type
+    {
+        fs::directory_entry sym_entry(valid_sym);
+        fs::directory_entry dsym_entry(dangling_sym);
+
+        ec = error_code();
+        BOOST_TEST_EQ(sym_entry.symlink_file_type(ec), fs::symlink_file);
+        BOOST_TEST(!ec);
+        BOOST_TEST_EQ(dsym_entry.symlink_file_type(ec), fs::symlink_file);
+        BOOST_TEST(!ec);
+    }
+
+    // refresh
+    {
+        fs::directory_entry sym_entry(valid_sym);
+        fs::directory_entry dsym_entry(dangling_sym);
+
+        ec = error_code();
+        sym_entry.refresh(ec);
+        BOOST_TEST(!ec);
+        dsym_entry.refresh(ec);
+        BOOST_TEST(!ec);
+
+        // Make sure status() and symlink_status() hold the expected types
+        // after a call to refresh, too
+        BOOST_TEST_EQ(sym_entry.symlink_status().type(), fs::symlink_file);
+        BOOST_TEST_EQ(sym_entry.status().type(), fs::regular_file);
+        BOOST_TEST_EQ(dsym_entry.symlink_status().type(), fs::symlink_file);
+        BOOST_TEST_EQ(dsym_entry.status().type(), fs::file_not_found);
+    }
+
+#if BOOST_FILESYSTEM_VERSION >= 4
+    // ctor overload with error_code
+    {
+        ec = error_code();
+        fs::directory_entry sym_entry(valid_sym, ec);
+        BOOST_TEST(!ec);
+        BOOST_TEST(sym_entry.path() == valid_sym);
+
+        // In particular, shouldn't report an error with broken symlinks
+        fs::directory_entry dsym_entry(dangling_sym, ec);
+        BOOST_TEST(!ec);
+        BOOST_TEST(dsym_entry.path() == dangling_sym);
+    }
+
+    // assign overload with error_code
+    {
+        fs::directory_entry sym_entry;
+        fs::directory_entry dsym_entry;
+
+        ec = error_code();
+        sym_entry.assign(valid_sym, ec);
+        BOOST_TEST(!ec);
+        BOOST_TEST(sym_entry.path() == valid_sym);
+
+        // In particular, shouldn't report an error with broken symlinks
+        dsym_entry.assign(dangling_sym, ec);
+        BOOST_TEST(!ec);
+        BOOST_TEST(dsym_entry.path() == dangling_sym);
+    }
+#endif
+
+    fs::remove(reg_file);
+    fs::remove(valid_sym);
+    fs::remove(dangling_sym);
+}
+
 //  write_time_tests  ----------------------------------------------------------------//
 
 void write_time_tests(const fs::path& dirx)
@@ -3025,6 +3233,7 @@ int cpp_main(int argc, char* argv[])
     weakly_canonical_basic_tests();
     permissions_tests();
     copy_file_tests(f1, d1);
+    directory_entry_tests();
     if (create_symlink_ok) // only if symlinks supported
     {
         symlink_status_tests();
@@ -3033,6 +3242,7 @@ int cpp_main(int argc, char* argv[])
         weakly_canonical_symlink_tests();
         symlink_file_size_tests();
         symlink_is_empty_tests();
+        directory_entry_symlink_tests();
     }
     iterator_status_tests(); // lots of cases by now, so a good time to test
                              //  dump_tree(dir);
