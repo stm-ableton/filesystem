@@ -216,6 +216,8 @@ public:
 
         if (!filesystem::status_known(m_status))
             refresh_impl(&ec, refresh_mode::follow);
+        else if (m_status.type() == filesystem::file_not_found)
+            ec = make_error_code(system::errc::no_such_file_or_directory);
         return m_status;
     }
 
@@ -232,6 +234,8 @@ public:
 
         if (!filesystem::status_known(m_symlink_status))
             refresh_impl(&ec, refresh_mode::no_follow);
+        else if (m_symlink_status.type() == filesystem::file_not_found)
+            ec = make_error_code(system::errc::no_such_file_or_directory);
         return m_symlink_status;
     }
 
@@ -248,6 +252,8 @@ public:
 
         if (!filesystem::type_present(m_status))
             refresh_impl(&ec, refresh_mode::follow);
+        else if (m_status.type() == filesystem::file_not_found)
+            ec = make_error_code(system::errc::no_such_file_or_directory);
         return m_status.type();
     }
 
@@ -264,6 +270,8 @@ public:
 
         if (!filesystem::type_present(m_symlink_status))
             refresh_impl(&ec, refresh_mode::no_follow);
+        else if (m_symlink_status.type() == filesystem::file_not_found)
+            ec = make_error_code(system::errc::no_such_file_or_directory);
         return m_symlink_status.type();
     }
 

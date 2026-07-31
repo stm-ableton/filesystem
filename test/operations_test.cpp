@@ -2410,44 +2410,74 @@ void directory_entry_tests()
     cout << "directory_entry_tests..." << endl;
 
     fs::path reg_file(dir / "reg-file");
+    fs::path nonexistent_file(dir / "nonexistent-file");
     fs::remove(reg_file);
+    fs::remove(nonexistent_file);
     create_file(reg_file);
     error_code ec;
 
     // status
     {
         fs::directory_entry reg_entry(reg_file);
+        fs::directory_entry nonexistent_entry(nonexistent_file);
 
         ec = error_code();
         BOOST_TEST_EQ(reg_entry.status(ec).type(), fs::regular_file);
         BOOST_TEST(!ec);
+
+        // Refresh cache to make sure the error code is still set in a status call,
+        // even when getting the status from the cache
+        nonexistent_entry.refresh();
+        BOOST_TEST_EQ(nonexistent_entry.status(ec).type(), fs::file_not_found);
+        BOOST_TEST(ec);
     }
 
     // symlink_status
     {
         fs::directory_entry reg_entry(reg_file);
+        fs::directory_entry nonexistent_entry(nonexistent_file);
 
         ec = error_code();
         BOOST_TEST_EQ(reg_entry.symlink_status(ec).type(), fs::regular_file);
         BOOST_TEST(!ec);
+
+        // Refresh cache to make sure the error code is still set in a symlink_status call,
+        // even when getting the status from the cache
+        nonexistent_entry.refresh();
+        BOOST_TEST_EQ(nonexistent_entry.symlink_status(ec).type(), fs::file_not_found);
+        BOOST_TEST(ec);
     }
 
     // file_type
     {
         fs::directory_entry reg_entry(reg_file);
+        fs::directory_entry nonexistent_entry(nonexistent_file);
 
         ec = error_code();
         BOOST_TEST_EQ(reg_entry.file_type(ec), fs::regular_file);
         BOOST_TEST(!ec);
+
+        // Refresh cache to make sure the error code is still set in a file_type call,
+        // even when getting the status from the cache
+        nonexistent_entry.refresh();
+        BOOST_TEST_EQ(nonexistent_entry.file_type(ec), fs::file_not_found);
+        BOOST_TEST(ec);
     }
 
     // symlink_file_type
     {
         fs::directory_entry reg_entry(reg_file);
+        fs::directory_entry nonexistent_entry(nonexistent_file);
 
         ec = error_code();
         BOOST_TEST_EQ(reg_entry.symlink_file_type(ec), fs::regular_file);
         BOOST_TEST(!ec);
+
+        // Refresh cache to make sure the error code is still set in a symlink_file_type call,
+        // even when getting the status from the cache
+        nonexistent_entry.refresh();
+        BOOST_TEST_EQ(nonexistent_entry.symlink_file_type(ec), fs::file_not_found);
+        BOOST_TEST(ec);
     }
 
     // refresh
@@ -2485,6 +2515,7 @@ void directory_entry_tests()
 #endif
 
     fs::remove(reg_file);
+    fs::remove(nonexistent_file);
 }
 
 //  directory_entry_symlink_tests  --------------------------------------------//
@@ -2512,10 +2543,12 @@ void directory_entry_symlink_tests()
         ec = error_code();
         BOOST_TEST_EQ(sym_entry.status(ec).type(), fs::regular_file);
         BOOST_TEST(!ec);
+
+        // Refresh cache to make sure the error code is still set in a status call,
+        // even when getting the status from the cache
+        dsym_entry.refresh();
         BOOST_TEST_EQ(dsym_entry.status(ec).type(), fs::file_not_found);
-#if BOOST_FILESYSTEM_VERSION < 4
         BOOST_TEST(ec);
-#endif
     }
 
     // symlink_status
@@ -2538,10 +2571,12 @@ void directory_entry_symlink_tests()
         ec = error_code();
         BOOST_TEST_EQ(sym_entry.file_type(ec), fs::regular_file);
         BOOST_TEST(!ec);
+
+        // Refresh cache to make sure the error code is still set in a file_type call,
+        // even when getting the status from the cache
+        dsym_entry.refresh();
         BOOST_TEST_EQ(dsym_entry.file_type(ec), fs::file_not_found);
-#if BOOST_FILESYSTEM_VERSION < 4
         BOOST_TEST(ec);
-#endif
     }
 
     // symlink_file_type
